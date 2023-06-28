@@ -1,8 +1,7 @@
 package ru.practicum.stat.service.service;
 
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.stat.dto.RequestDto;
@@ -16,7 +15,6 @@ import ru.practicum.stat.service.model.Stats;
 import ru.practicum.stat.service.repository.StatsRepository;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -25,14 +23,9 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 @Slf4j
-@NoArgsConstructor
+@RequiredArgsConstructor
 public class StatsServiceImpl implements StatsService {
-    private StatsRepository statsRepository;
-
-    @Autowired
-    public StatsServiceImpl(StatsRepository statsRepository) {
-        this.statsRepository = statsRepository;
-    }
+    private final StatsRepository statsRepository;
 
     @Override
     public ResponseDto hit(RequestDto requestDto) {
@@ -44,31 +37,28 @@ public class StatsServiceImpl implements StatsService {
 
     @Transactional(readOnly = true)
     @Override
-    public List<ResponseDto> stats(String start, String end, List<String> uri, boolean unique) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        LocalDateTime timeStart = LocalDateTime.parse(start, formatter);
-        LocalDateTime timeEnd = LocalDateTime.parse(end, formatter);
+    public List<ResponseDto> stats(LocalDateTime start, LocalDateTime end, List<String> uri, boolean unique) {
         List<ResponseDto> listResponseStat = new ArrayList<>();
 
-        if (timeStart.isAfter(timeEnd)) {
+        if (start.isAfter(end)) {
             throw new TimestampException(ExceptionMessages.START_IS_AFTER_END.label);
         }
 
         if (uri != null && !uri.isEmpty()) {
             if (unique) {
                 for (String u : uri) {
-                    listResponseStat.addAll(statsRepository.findStatUriUnique(timeStart, timeEnd, u));
+                    listResponseStat.addAll(statsRepository.findStatUriUnique(start, end, u));
                 }
             } else {
                 for (String u : uri) {
-                    listResponseStat.addAll(statsRepository.findStatUri(timeStart, timeEnd, u));
+                    listResponseStat.addAll(statsRepository.findStatUri(start, end, u));
                 }
             }
         } else {
             if (unique) {
-                listResponseStat.addAll(statsRepository.findStatUnique(timeStart, timeEnd));
+                listResponseStat.addAll(statsRepository.findStatUnique(start, end));
             } else {
-                listResponseStat.addAll(statsRepository.findStat(timeStart, timeEnd));
+                listResponseStat.addAll(statsRepository.findStat(start, end));
             }
         }
 
