@@ -3,6 +3,7 @@ package ru.practicum.main.events.close.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.main.events.close.service.CloseEventsService;
 import ru.practicum.main.events.dto.EventFullDto;
@@ -12,26 +13,29 @@ import ru.practicum.main.events.dto.UpdateEventUserRequest;
 import ru.practicum.main.messages.LogMessages;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Positive;
+import javax.validation.constraints.PositiveOrZero;
 import java.util.List;
 
 @RestController
 @RequestMapping(path = "/users")
 @RequiredArgsConstructor
 @Slf4j
+@Validated
 public class CloseEventsController {
     private final CloseEventsService service;
 
     @GetMapping(path = "/{userId}/events")
     public List<EventShortDto> getEventsByUser(@PathVariable(name = "userId") int userId,
-                                               @RequestParam(name = "from", defaultValue = "0") int from,
-                                               @RequestParam(name = "size", defaultValue = "10") int size) {
+                                               @RequestParam(name = "from", defaultValue = "0") @PositiveOrZero int from,
+                                               @RequestParam(name = "size", defaultValue = "10") @Positive int size) {
         log.debug(LogMessages.TRY_PRIVATE_GET_EVENT_USER.label, userId);
         return service.getEventsByUser(userId, from, size);
     }
 
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping(path = "/{userId}/events")
-    public EventFullDto createEvents(@PathVariable(name = "userId") int userId,
+    public EventFullDto createEvents(@PathVariable(name = "userId") @Positive int userId,
                                      @RequestBody @Valid NewEventDto newEventDto) {
         log.debug(LogMessages.TRY_PRIVATE_POST_EVENT_USER_ID.label, userId);
         return service.createEvents(userId, newEventDto);

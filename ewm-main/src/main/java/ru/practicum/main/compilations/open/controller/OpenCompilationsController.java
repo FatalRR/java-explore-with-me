@@ -2,6 +2,7 @@ package ru.practicum.main.compilations.open.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -10,24 +11,27 @@ import ru.practicum.main.compilations.dto.CompilationDto;
 import ru.practicum.main.compilations.open.service.OpenCompilationsService;
 import ru.practicum.main.messages.LogMessages;
 
+import javax.validation.constraints.Positive;
+import javax.validation.constraints.PositiveOrZero;
 import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
 @Slf4j
+@Validated
 public class OpenCompilationsController {
     private final OpenCompilationsService service;
 
     @GetMapping(path = "/compilations")
     public List<CompilationDto> getCompilations(@RequestParam(name = "pinned", required = false) String pinned,
-                                                @RequestParam(name = "from", defaultValue = "0") int from,
-                                                @RequestParam(name = "size", defaultValue = "10") int size) {
+                                                @RequestParam(name = "from", defaultValue = "0") @PositiveOrZero int from,
+                                                @RequestParam(name = "size", defaultValue = "10") @Positive int size) {
         log.debug(LogMessages.TRY_PUBLIC_GET_COMPILATIONS.label);
         return service.getCompilations(pinned, from, size);
     }
 
     @GetMapping(path = "/compilations/{compId}")
-    public CompilationDto getCompilationsById(@PathVariable(name = "compId") int compId) {
+    public CompilationDto getCompilationsById(@PathVariable(name = "compId") @Positive int compId) {
         log.debug(LogMessages.TRY_PUBLIC_GET_COMPILATIONS_ID.label, compId);
         return service.getCompilationsById(compId);
     }
