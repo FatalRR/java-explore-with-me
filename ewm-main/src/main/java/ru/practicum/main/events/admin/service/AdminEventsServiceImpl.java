@@ -7,8 +7,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.main.categories.admin.service.AdminCategoriesService;
 import ru.practicum.main.categories.model.Category;
+import ru.practicum.main.categories.repository.CategoriesRepository;
 import ru.practicum.main.events.dto.AdminEventRequests;
 import ru.practicum.main.events.dto.EventFullDto;
 import ru.practicum.main.events.dto.UpdateEventAdminRequest;
@@ -21,13 +21,13 @@ import ru.practicum.main.exception.ConflictException;
 import ru.practicum.main.exception.NotFoundException;
 import ru.practicum.main.exception.ValidTimeException;
 import ru.practicum.main.locations.model.Location;
-import ru.practicum.main.locations.service.LocationService;
+import ru.practicum.main.locations.repository.LocationRepository;
 import ru.practicum.main.messages.ExceptionMessages;
 import ru.practicum.main.messages.LogMessages;
+import ru.practicum.main.utils.Constants;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,8 +37,8 @@ import java.util.List;
 @Slf4j
 public class AdminEventsServiceImpl implements AdminEventsService {
     private final EventsRepository repository;
-    private final AdminCategoriesService categoriesService;
-    private final LocationService locationService;
+    private final CategoriesRepository categoriesRepository;
+    private final LocationRepository locationRepository;
 
     @Transactional(readOnly = true)
     @Override
@@ -88,13 +88,12 @@ public class AdminEventsServiceImpl implements AdminEventsService {
     @Override
     public EventFullDto changeEvents(int eventId, UpdateEventAdminRequest updateEventAdminRequest) {
         Event event = repository.findById(eventId).orElseThrow(() -> new NotFoundException(ExceptionMessages.NOT_FOUND_EVENTS_EXCEPTION.label));
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
         if (updateEventAdminRequest.getAnnotation() != null) {
             event.setAnnotation(updateEventAdminRequest.getAnnotation());
         }
         if (updateEventAdminRequest.getCategory() != null) {
-            Category category = categoriesService.findCategoriesById(updateEventAdminRequest.getCategory());
+            Category category = categoriesRepository.findById(updateEventAdminRequest.getCategory()).orElseThrow(() -> new NotFoundException(ExceptionMessages.NOT_FOUND_CATEGORIES_EXCEPTION.label));
             event.setCategory(category);
         }
         if (updateEventAdminRequest.getDescription() != null) {
@@ -102,16 +101,16 @@ public class AdminEventsServiceImpl implements AdminEventsService {
         }
         if (updateEventAdminRequest.getEventDate() != null) {
             LocalDateTime startOldDate = event.getCreatedOn();
-            LocalDateTime startNewDate = LocalDateTime.parse(updateEventAdminRequest.getEventDate(), formatter);
+            LocalDateTime startNewDate = LocalDateTime.parse(updateEventAdminRequest.getEventDate(), Constants.formatter);
 
             if (Duration.between(startOldDate, startNewDate).toMinutes() < Duration.ofHours(1).toMinutes()) {
                 throw new ValidTimeException(ExceptionMessages.VALID_TIME_EXCEPTION.label);
             }
 
-            event.setEventDate(LocalDateTime.parse(updateEventAdminRequest.getEventDate(), formatter));
+            event.setEventDate(LocalDateTime.parse(updateEventAdminRequest.getEventDate(), Constants.formatter));
         }
         if (updateEventAdminRequest.getLocation() != null) {
-            Location location = locationService.save(updateEventAdminRequest.getLocation());
+            Location location = locationRepository.save(updateEventAdminRequest.getLocation());
             event.setLocation(location);
         }
         if (updateEventAdminRequest.getPaid() != null) {
