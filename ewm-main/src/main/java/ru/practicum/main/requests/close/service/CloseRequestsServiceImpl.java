@@ -4,9 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.main.events.close.service.CloseEventsService;
 import ru.practicum.main.events.model.Event;
 import ru.practicum.main.events.model.EventStatus;
+import ru.practicum.main.events.repository.EventsRepository;
 import ru.practicum.main.exception.ConflictException;
 import ru.practicum.main.exception.NotFoundException;
 import ru.practicum.main.messages.ExceptionMessages;
@@ -14,16 +14,15 @@ import ru.practicum.main.messages.LogMessages;
 import ru.practicum.main.requests.dto.EventRequestStatusUpdateRequest;
 import ru.practicum.main.requests.dto.EventRequestStatusUpdateResult;
 import ru.practicum.main.requests.dto.ParticipationRequestDto;
+import ru.practicum.main.requests.mapper.RequestsMap;
 import ru.practicum.main.requests.model.ParticipationRequest;
 import ru.practicum.main.requests.model.StatusEventRequestUpdateResult;
 import ru.practicum.main.requests.repository.RequestsRepository;
-import ru.practicum.main.users.admin.service.AdminUsersService;
 import ru.practicum.main.users.model.User;
+import ru.practicum.main.users.repository.UsersRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
-import ru.practicum.main.requests.mapper.RequestsMap;
 
 @Service
 @Transactional
@@ -31,12 +30,12 @@ import ru.practicum.main.requests.mapper.RequestsMap;
 @Slf4j
 public class CloseRequestsServiceImpl implements CloseRequestsService {
     private final RequestsRepository repository;
-    private final AdminUsersService usersService;
-    private final CloseEventsService eventsService;
+    private final UsersRepository usersRepository;
+    private final EventsRepository eventsRepository;
 
     @Override
     public List<ParticipationRequestDto> getRequestsByUserOtherEvents(int userId) {
-        usersService.getUserById(userId);
+        usersRepository.findById(userId).orElseThrow(() -> new NotFoundException(ExceptionMessages.NOT_FOUND_USERS_EXCEPTION.label));
 
         log.debug(LogMessages.PRIVATE_GET_REQUESTS_USER_ID.label, userId);
         return RequestsMap.mapToListParticipationRequestDto(repository.findParticipationRequestsByRequester_Id(userId));
@@ -44,28 +43,28 @@ public class CloseRequestsServiceImpl implements CloseRequestsService {
 
     @Override
     public ParticipationRequestDto createRequestsByUserOtherEvents(int userId, int eventId) {
-        User user = usersService.getUserById(userId);
-        Event event = eventsService.getEventById(eventId);
-        List<ParticipationRequestDto> requestDtoList = getRequestsByUserOtherEvents(userId);
+        User user = usersRepository.findById(userId).orElseThrow(() -> new NotFoundException(ExceptionMessages.NOT_FOUND_USERS_EXCEPTION.label));
+        Event event = eventsRepository.findById(eventId).orElseThrow(() -> new NotFoundException(ExceptionMessages.NOT_FOUND_EVENTS_EXCEPTION.label));
+        List<ParticipationRequestDto> existingRequests = getRequestsByUserOtherEvents(userId);
 
-        boolean conditionOne = false;
+        boolean hasExistingRequestForEvent = false;
 
-        if (requestDtoList != null && !requestDtoList.isEmpty()) {
-            for (ParticipationRequestDto requestDto : requestDtoList) {
+        if (existingRequests != null && !existingRequests.isEmpty()) {
+            for (ParticipationRequestDto requestDto : existingRequests) {
                 if (requestDto.getEvent() == eventId) {
-                    conditionOne = true;
+                    hasExistingRequestForEvent = true;
                     break;
                 }
             }
         }
 
-        boolean conditionTwo = event.getInitiator().getId() == user.getId();
-        boolean conditionThree = event.getState().equals(EventStatus.PENDING) || event.getState().equals(EventStatus.CANCELED);
-        boolean conditionFour = (event.getConfirmedRequests() >= event.getParticipantLimit()) && event.getParticipantLimit() != 0;
-        boolean conditionFive = !event.isRequestModeration();
-        boolean conditionSix = event.getParticipantLimit() == 0;
+        boolean isInitiator = event.getInitiator().getId() == user.getId();
+        boolean isPendingOrCanceled = event.getState().equals(EventStatus.PENDING) || event.getState().equals(EventStatus.CANCELED);
+        boolean isParticipantLimitReached = (event.getConfirmedRequests() >= event.getParticipantLimit()) && event.getParticipantLimit() != 0;
+        boolean isRequestModerationDisabled = !event.isRequestModeration();
+        boolean isUnlimitedParticipants = event.getParticipantLimit() == 0;
 
-        if (conditionOne || conditionTwo || conditionThree || conditionFour) {
+        if (hasExistingRequestForEvent || isInitiator || isPendingOrCanceled || isParticipantLimitReached) {
             throw new ConflictException(ExceptionMessages.CONFLICT_EXCEPTION.label);
         }
 
@@ -75,7 +74,7 @@ public class CloseRequestsServiceImpl implements CloseRequestsService {
                 .requester(user)
                 .build();
 
-        if (conditionFive || conditionSix) {
+        if (isRequestModerationDisabled || isUnlimitedParticipants) {
             request.setStatus(StatusEventRequestUpdateResult.CONFIRMED);
             event.setConfirmedRequests(event.getConfirmedRequests() + 1);
         } else {
@@ -111,32 +110,28 @@ public class CloseRequestsServiceImpl implements CloseRequestsService {
         }
 
         for (ParticipationRequest request : requestList) {
+            boolean isUnlimitedParticipantsOrModerationDisabled = (request.getEventsWithRequests().getParticipantLimit() == 0) || !request.getEventsWithRequests().isRequestModeration();
+            boolean isParticipantLimitReached = request.getEventsWithRequests().getConfirmedRequests() >= request.getEventsWithRequests().getParticipantLimit();
+            boolean isRequestPending = request.getStatus().equals(StatusEventRequestUpdateResult.PENDING);
 
-            boolean conditionOne = (request.getEventsWithRequests().getParticipantLimit() == 0) || !request.getEventsWithRequests().isRequestModeration();
-            boolean conditionTwo = request.getEventsWithRequests().getConfirmedRequests() >= request.getEventsWithRequests().getParticipantLimit();
-            boolean conditionThree = request.getStatus().equals(StatusEventRequestUpdateResult.PENDING);
-
-            if (conditionOne) {
+            if (isUnlimitedParticipantsOrModerationDisabled) {
                 request.setStatus(StatusEventRequestUpdateResult.CONFIRMED);
                 request.getEventsWithRequests().setConfirmedRequests(request.getEventsWithRequests().getConfirmedRequests() + 1);
-                repository.save(request);
-            }
-
-            if (conditionThree) {
-                if (conditionTwo) {
+            } else if (isRequestPending) {
+                if (isParticipantLimitReached) {
                     request.setStatus(StatusEventRequestUpdateResult.REJECTED);
-                    repository.save(request);
                 } else {
                     request.setStatus(eventRequestStatusUpdateRequest.getStatus());
                     if (request.getStatus().equals(StatusEventRequestUpdateResult.CONFIRMED)) {
                         request.getEventsWithRequests().setConfirmedRequests(request.getEventsWithRequests().getConfirmedRequests() + 1);
                     }
-                    repository.save(request);
                 }
             } else {
                 throw new ConflictException(ExceptionMessages.CONFLICT_EXCEPTION.label);
             }
         }
+
+        repository.saveAll(requestList);
 
         log.debug(LogMessages.PRIVATE_PATCH_REQUESTS_STATUS_EVENT_ID.label, eventId);
         return RequestsMap.mapToEventRequestStatusUpdateResult(requestList);
