@@ -7,10 +7,11 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.main.compilations.dto.CompilationDto;
 import ru.practicum.main.compilations.dto.NewCompilationDto;
 import ru.practicum.main.compilations.dto.UpdateCompilationRequest;
+import ru.practicum.main.compilations.mapper.CompilationMapper;
 import ru.practicum.main.compilations.model.Compilations;
 import ru.practicum.main.compilations.repository.CompilationsRepository;
-import ru.practicum.main.events.close.service.CloseEventsService;
 import ru.practicum.main.events.model.Event;
+import ru.practicum.main.events.repository.EventsRepository;
 import ru.practicum.main.exception.NotFoundException;
 import ru.practicum.main.messages.ExceptionMessages;
 import ru.practicum.main.messages.LogMessages;
@@ -18,15 +19,13 @@ import ru.practicum.main.messages.LogMessages;
 import java.util.ArrayList;
 import java.util.List;
 
-import ru.practicum.main.compilations.mapper.CompilationMapper;
-
 @Service
 @Transactional
 @RequiredArgsConstructor
 @Slf4j
 public class AdminCompilationsServiceImpl implements AdminCompilationsService {
     private final CompilationsRepository compilationsRepository;
-    private final CloseEventsService eventsService;
+    private final EventsRepository eventsRepository;
 
     @Override
     public CompilationDto createCompilations(NewCompilationDto newCompilationDto) {
@@ -34,7 +33,7 @@ public class AdminCompilationsServiceImpl implements AdminCompilationsService {
 
         if (newCompilationDto.getEvents() != null && !newCompilationDto.getEvents().isEmpty()) {
             for (Integer eventId : newCompilationDto.getEvents()) {
-                eventList.add(eventsService.getEventById(eventId));
+                eventList.add(eventsRepository.findById(eventId).orElseThrow(() -> new NotFoundException(ExceptionMessages.NOT_FOUND_EVENTS_EXCEPTION.label)));
             }
         }
         log.debug(LogMessages.ADMIN_POST_COMPILATIONS.label);
@@ -56,7 +55,7 @@ public class AdminCompilationsServiceImpl implements AdminCompilationsService {
             List<Event> eventList = new ArrayList<>();
 
             for (Integer eventId : updateCompilationRequest.getEvents()) {
-                eventList.add(eventsService.getEventById(eventId));
+                eventList.add(eventsRepository.findById(eventId).orElseThrow(() -> new NotFoundException(ExceptionMessages.NOT_FOUND_EVENTS_EXCEPTION.label)));
             }
 
             oldCompilations.setEventsWithCompilations(eventList);
