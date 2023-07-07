@@ -7,30 +7,29 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.main.categories.mapper.CategoryMapper;
 import ru.practicum.main.categories.model.Category;
-import ru.practicum.main.categories.open.service.OpenCategoriesService;
+import ru.practicum.main.categories.repository.CategoriesRepository;
 import ru.practicum.main.events.dto.EventFullDto;
 import ru.practicum.main.events.dto.EventShortDto;
 import ru.practicum.main.events.dto.NewEventDto;
 import ru.practicum.main.events.dto.UpdateEventUserRequest;
+import ru.practicum.main.events.mapper.EventsMapper;
 import ru.practicum.main.events.model.Event;
 import ru.practicum.main.events.model.EventStatus;
 import ru.practicum.main.events.repository.EventsRepository;
 import ru.practicum.main.exception.ConflictException;
 import ru.practicum.main.exception.NotFoundException;
 import ru.practicum.main.exception.ValidTimeException;
-import ru.practicum.main.locations.service.LocationService;
+import ru.practicum.main.locations.repository.LocationRepository;
 import ru.practicum.main.messages.ExceptionMessages;
 import ru.practicum.main.messages.LogMessages;
-import ru.practicum.main.users.admin.service.AdminUsersServiceImpl;
 import ru.practicum.main.users.model.User;
+import ru.practicum.main.users.repository.UsersRepository;
+import ru.practicum.main.utils.Constants;
 import ru.practicum.main.utils.Page;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-
-import ru.practicum.main.events.mapper.EventsMapper;
 
 @Service
 @Transactional
@@ -38,9 +37,9 @@ import ru.practicum.main.events.mapper.EventsMapper;
 @Slf4j
 public class CloseEventsServiceImpl implements CloseEventsService {
     private final EventsRepository repository;
-    private final LocationService locationService;
-    private final AdminUsersServiceImpl usersService;
-    private final OpenCategoriesService categoriesService;
+    private final UsersRepository usersRepository;
+    private final CategoriesRepository categoriesRepository;
+    private final LocationRepository locationRepository;
 
     @Transactional(readOnly = true)
     @Override
@@ -53,9 +52,9 @@ public class CloseEventsServiceImpl implements CloseEventsService {
     public EventFullDto createEvents(int userId, NewEventDto newEventDto) {
         validTime(newEventDto.getEventDate());
 
-        User user = usersService.getUserById(userId);
-        Category category = categoriesService.getCatById(newEventDto.getCategory());
-        locationService.save(newEventDto.getLocation());
+        User user = usersRepository.findById(userId).orElseThrow(() -> new NotFoundException(ExceptionMessages.NOT_FOUND_USERS_EXCEPTION.label));
+        Category category = categoriesRepository.findById(newEventDto.getCategory()).orElseThrow(() -> new NotFoundException(ExceptionMessages.NOT_FOUND_CATEGORIES_EXCEPTION.label));
+        locationRepository.save(newEventDto.getLocation());
 
         log.debug(LogMessages.PRIVATE_POST_EVENT_USER_ID.label, userId);
         return EventsMapper.mapToEventFullDto(repository.save(EventsMapper.mapToEvent(newEventDto, category, user)));
@@ -125,8 +124,7 @@ public class CloseEventsServiceImpl implements CloseEventsService {
     }
 
     private void validTime(String time) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        LocalDateTime startDate = LocalDateTime.parse(time, formatter);
+        LocalDateTime startDate = LocalDateTime.parse(time, Constants.formatter);
 
         if (Duration.between(LocalDateTime.now(), startDate).toMinutes() < Duration.ofHours(2).toMinutes()) {
             throw new ValidTimeException(ExceptionMessages.VALID_TIME_EXCEPTION.label);
