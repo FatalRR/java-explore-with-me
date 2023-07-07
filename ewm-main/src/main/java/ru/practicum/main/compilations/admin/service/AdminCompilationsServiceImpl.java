@@ -32,10 +32,12 @@ public class AdminCompilationsServiceImpl implements AdminCompilationsService {
         List<Event> eventList = new ArrayList<>();
 
         if (newCompilationDto.getEvents() != null && !newCompilationDto.getEvents().isEmpty()) {
-            for (Integer eventId : newCompilationDto.getEvents()) {
-                eventList.add(eventsRepository.findById(eventId).orElseThrow(() -> new NotFoundException(ExceptionMessages.NOT_FOUND_EVENTS_EXCEPTION.label)));
+            eventList = eventsRepository.findAllById(newCompilationDto.getEvents());
+            if (eventList.size() != newCompilationDto.getEvents().size()) {
+                throw new NotFoundException(ExceptionMessages.NOT_FOUND_EVENTS_EXCEPTION.label);
             }
         }
+
         log.debug(LogMessages.ADMIN_POST_COMPILATIONS.label);
         return CompilationMapper.mapToCompilationsDto(compilationsRepository.save(CompilationMapper.mapToCompilations(newCompilationDto, eventList)));
     }
@@ -52,12 +54,10 @@ public class AdminCompilationsServiceImpl implements AdminCompilationsService {
         Compilations oldCompilations = compilationsRepository.findById(compId).orElseThrow(() -> new NotFoundException(ExceptionMessages.NOT_FOUND_COMPILATIONS_EXCEPTION.label));
 
         if (updateCompilationRequest.getEvents() != null && !updateCompilationRequest.getEvents().isEmpty()) {
-            List<Event> eventList = new ArrayList<>();
-
-            for (Integer eventId : updateCompilationRequest.getEvents()) {
-                eventList.add(eventsRepository.findById(eventId).orElseThrow(() -> new NotFoundException(ExceptionMessages.NOT_FOUND_EVENTS_EXCEPTION.label)));
+            List<Event> eventList = eventsRepository.findAllById(updateCompilationRequest.getEvents());
+            if (eventList.size() != updateCompilationRequest.getEvents().size()) {
+                throw new NotFoundException(ExceptionMessages.NOT_FOUND_EVENTS_EXCEPTION.label);
             }
-
             oldCompilations.setEventsWithCompilations(eventList);
         }
         if (updateCompilationRequest.getPinned() != null) {
