@@ -1,12 +1,14 @@
 package ru.practicum.main.exception;
 
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ApiError {
     private String message;
     private String reason;
