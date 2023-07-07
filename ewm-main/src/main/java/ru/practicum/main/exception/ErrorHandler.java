@@ -6,15 +6,13 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.practicum.main.messages.ExceptionMessages;
+import ru.practicum.main.utils.Constants;
 
 import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-
 
 @RestControllerAdvice
 public class ErrorHandler {
-    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.NOT_FOUND)
@@ -23,7 +21,7 @@ public class ErrorHandler {
                 .message(e.getMessage())
                 .reason(ExceptionMessages.NOT_FOUND_EXCEPTION.label)
                 .status(HttpStatus.NOT_FOUND.toString())
-                .timestamp(LocalDateTime.parse(LocalDateTime.now().format(formatter), formatter))
+                .timestamp(LocalDateTime.parse(LocalDateTime.now().format(Constants.formatter), Constants.formatter))
                 .build();
     }
 
@@ -34,7 +32,7 @@ public class ErrorHandler {
                 .message(e.getMessage())
                 .reason(ExceptionMessages.VALID_TIME_EXCEPTION.label)
                 .status(HttpStatus.BAD_REQUEST.toString())
-                .timestamp(LocalDateTime.parse(LocalDateTime.now().format(formatter), formatter))
+                .timestamp(LocalDateTime.parse(LocalDateTime.now().format(Constants.formatter), Constants.formatter))
                 .build();
     }
 
@@ -45,7 +43,7 @@ public class ErrorHandler {
                 .message(e.getMessage())
                 .reason(ExceptionMessages.CONFLICT_EXCEPTION.label)
                 .status(HttpStatus.CONFLICT.toString())
-                .timestamp(LocalDateTime.parse(LocalDateTime.now().format(formatter), formatter))
+                .timestamp(LocalDateTime.parse(LocalDateTime.now().format(Constants.formatter), Constants.formatter))
                 .build();
     }
 
@@ -56,7 +54,7 @@ public class ErrorHandler {
                 .message(e.getMessage())
                 .reason(ExceptionMessages.CONFLICT_EXCEPTION.label)
                 .status(HttpStatus.CONFLICT.toString())
-                .timestamp(LocalDateTime.parse(LocalDateTime.now().format(formatter), formatter))
+                .timestamp(LocalDateTime.parse(LocalDateTime.now().format(Constants.formatter), Constants.formatter))
                 .build();
     }
 
@@ -67,7 +65,7 @@ public class ErrorHandler {
                 .message(e.getMessage())
                 .reason(ExceptionMessages.CONFLICT_EXCEPTION.label)
                 .status(HttpStatus.BAD_REQUEST.toString())
-                .timestamp(LocalDateTime.parse(LocalDateTime.now().format(formatter), formatter))
+                .timestamp(LocalDateTime.parse(LocalDateTime.now().format(Constants.formatter), Constants.formatter))
                 .build();
     }
 }
