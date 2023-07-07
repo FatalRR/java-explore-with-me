@@ -17,13 +17,12 @@ import ru.practicum.main.compilations.mapper.CompilationMapper;
 import ru.practicum.main.utils.Page;
 
 @Service
-@Transactional
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Slf4j
 public class OpenCompilationsServiceImpl implements OpenCompilationsService {
     private final CompilationsRepository repository;
 
-    @Transactional(readOnly = true)
     @Override
     public List<CompilationDto> getCompilations(String pinned, int from, int size) {
         Pageable page = Page.paged(from, size);
@@ -31,7 +30,6 @@ public class OpenCompilationsServiceImpl implements OpenCompilationsService {
         return CompilationMapper.mapToListCompilationsDto(repository.findCompilationsByPinnedIs(Boolean.parseBoolean(pinned), page));
     }
 
-    @Transactional(readOnly = true)
     @Override
     public CompilationDto getCompilationsById(int compId) {
         log.debug(LogMessages.PUBLIC_GET_COMPILATIONS_ID.label, compId);
