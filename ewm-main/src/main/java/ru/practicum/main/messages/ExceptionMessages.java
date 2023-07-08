@@ -9,7 +9,9 @@ public enum ExceptionMessages {
     NOT_FOUND_USERS_EXCEPTION("Пользователь не найден или недоступен."),
     CONFLICT_EXCEPTION("Нарушение целостности данных."),
     VALID_TIME_EXCEPTION("Данные не удовлетворяет правилам создания."),
-    INVALID_PAGE_PARAMETERS("Неправильные параметры страницы.");
+    INVALID_PAGE_PARAMETERS("Неправильные параметры страницы."),
+    INTERNAL_SERVER_ERROR("Ошибка сервера"),
+    MISSING_REQUEST_PARAM("Отсутствуют параметры запроса");
 
     public final String label;
 
