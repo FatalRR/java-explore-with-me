@@ -7,6 +7,7 @@ public enum ExceptionMessages {
     NOT_FOUND_EVENTS_EXCEPTION("Событие не найдено или недоступно."),
     NOT_FOUND_REQUESTS_EXCEPTION("Запрос не найден или недоступен."),
     NOT_FOUND_USERS_EXCEPTION("Пользователь не найден или недоступен."),
+    NOT_FOUND_COMMENT_EXCEPTION("Комментарий не найден или недоступен."),
     CONFLICT_EXCEPTION("Нарушение целостности данных."),
     VALID_TIME_EXCEPTION("Данные не удовлетворяет правилам создания."),
     INVALID_PAGE_PARAMETERS("Неправильные параметры страницы."),

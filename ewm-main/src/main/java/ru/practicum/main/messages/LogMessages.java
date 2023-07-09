@@ -52,7 +52,13 @@ public enum LogMessages {
     ADMIN_DELETE_USERS("Admin: Успешное удаление пользователя по id: {}."),
     ADMIN_POST_COMPILATIONS("Admin: Успешное добавление новой подборки."),
     ADMIN_DELETE_COMPILATIONS_ID("Admin: Успешное удаление подборки по id: {}."),
-    ADMIN_PATCH_COMPILATIONS_ID("Admin: Успешное обновление информации о подборке по id: {}.");
+    ADMIN_PATCH_COMPILATIONS_ID("Admin: Успешное обновление информации о подборке по id: {}."),
+    TRY_PUBLIC_GET_COMMENTS("Public: Попытка получить все комментарии"),
+    TRY_PRIVATE_ADD_COMMENT("Private: Попытка добавить комментарий"),
+    TRY_PRIVATE_UPDATE_COMMENT("Private: Попытка обновить комментарий"),
+    TRY_PRIVATE_GET_COMMENT("Private: Попытка получить комментарий"),
+    TRY_PRIVATE_GET_COMMENT_USER_ID("Private: Попытка получить комментарий по id пользователя"),
+    TRY_PRIVATE_DELETE_COMMENT("Private: Попытка удалить комментарий");
 
     public final String label;
 
